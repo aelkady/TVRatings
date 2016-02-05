@@ -297,7 +297,7 @@ public class MainActivity extends AppCompatActivity {
 
     private class GetEpisodes extends AsyncTask<String, String, String> {
 
-        private String urlGeneral = "http://www.myapifilms.com/imdb";
+        private String urlGeneral = "http://www.myapifilms.com/imdb/idIMDB";
         private String urlSpecific = "http://www.omdbapi.com/";
         private String[] colors = {"red","blue","green","black","gray",
                 "cyan","magenta","yellow","lightgray","darkgray","aqua",
@@ -323,20 +323,21 @@ public class MainActivity extends AppCompatActivity {
             String text = args[0];
             List<NameValuePair> params = new ArrayList<NameValuePair>();
             params.add(new BasicNameValuePair("title",text));
-            params.add(new BasicNameValuePair("format","JSON"));
+            params.add(new BasicNameValuePair("format","json"));
             params.add(new BasicNameValuePair("seasons","1"));
             params.add(new BasicNameValuePair("limit","1"));
-            params.add(new BasicNameValuePair("lang","en-us"));
+            params.add(new BasicNameValuePair("language","en-us"));
             params.add(new BasicNameValuePair("token", "0c2b58d0-a25d-46ec-b060-79912e817a60"));
             // Making a request to url and getting response
             long startTime = System.currentTimeMillis();
             String jsonStr = sh.makeServiceCall(urlGeneral, ServiceHandler.GET, params);
 
-        if (jsonStr != null) {
+        if (jsonStr != null && jsonStr != "") {
             try {
 
-                JSONArray jsonArray = new JSONArray(jsonStr);
-                JSONObject jsonObj = jsonArray.getJSONObject(0);
+                //JSONArray jsonArray = new JSONArray(jsonStr);
+                JSONObject bridgeObj = new JSONObject(jsonStr);
+                JSONObject jsonObj = bridgeObj.getJSONObject("data").getJSONArray("movies").getJSONObject(0);
                 JSONArray seasons = jsonObj.getJSONArray("seasons");
                 String showRating = jsonObj.getString("rating");
                 if(showRating=="N/A") {
@@ -359,7 +360,12 @@ public class MainActivity extends AppCompatActivity {
                         String episodeStr = sh.makeServiceCall(urlSpecific, ServiceHandler.GET,
                                 paramsNew);
                         JSONObject episodeObj = new JSONObject(episodeStr);
+                        String response = episodeObj.getString("Response");
+                        if(response.equals("False")) {
+                            continue;
+                        }
                         String episodeReleased = episodeObj.getString("Released");
+
                         if(episodeReleased.equals("N/A")) {
                             continue;
                         }
@@ -397,19 +403,19 @@ public class MainActivity extends AppCompatActivity {
                         else {
                             if(masterLength%arbitraryFloor==0) {
                                 Point point = new Point(Integer.toString(masterLength),
-                                        Float.parseFloat(showRating));
+                                        Float.parseFloat(rating));
                                 point.setColor(Color.parseColor(colors[i % 19]));
                                 point.setStrokeColor(Color.parseColor(colors[i % 19]));
                                 imdbRatingSet.addPoint(point);
                             }
                             else {
-                                Point point = new Point("",Float.parseFloat(showRating));
+                                Point point = new Point("",Float.parseFloat(rating));
                                 point.setColor(Color.parseColor(colors[i % 19]));
                                 point.setStrokeColor(Color.parseColor(colors[i % 19]));
                                 imdbRatingSet.addPoint(point);
                             }
-                            if(Float.parseFloat(showRating) < minimumRating) {
-                                minimumRating = Float.parseFloat(showRating);
+                            if(Float.parseFloat(rating) < minimumRating) {
+                                minimumRating = Float.parseFloat(rating);
                             }
                         }
                         String seasonNumber = episodeObj.getString("Season");
@@ -420,7 +426,7 @@ public class MainActivity extends AppCompatActivity {
                         String toBeDisplayed = "<b>Season:</b> " + seasonNumber + "<br />" +
                                 "<b>Episode:</b> " + episodeNumber + "<br />" +
                                 "<b>Title:</b> " + episodeTitle + "<br />" +
-                                "<b>Rating:</b> " + showRating + "<br />" +
+                                "<b>Rating:</b> " + rating + "<br />" +
                                 "<b>Votes:</b> " + votes;
                         episodeData.add(Html.fromHtml(toBeDisplayed));
                     }
